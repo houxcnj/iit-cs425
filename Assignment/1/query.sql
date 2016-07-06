@@ -1,0 +1,124 @@
+--Xiaocheng Hou
+
+--2
+--method1
+SELECT Phone
+FROM FAMILYPACKAGE, RECCENTERMEMBER
+WHERE l_name = 'O''Shea' AND RECCENTERMEMBER.family_id= FAMILYPACKAGE.id;
+
+--method2
+SELECT PHONE
+FROM FAMILYPACKAGE
+WHERE id=(SELECT DISTINCT family_id
+          FROM RECCENTERMEMBER
+          WHERE l_name = 'O''Shea');
+--method3          
+SELECT PHONE
+FROM FAMILYPACKAGE
+WHERE id IN (SELECT DISTINCT family_id
+          FROM RECCENTERMEMBER
+          WHERE l_name = 'O''Shea');
+          
+--3
+/*
+draft:
+SELECT i.f_name, i.l_name, c1.TYPE
+FROM INSTRUCTOR i join class c1
+on EXISTS (SELECT * FROM CALSS WHERE c1.year = 2009 AND YEAR=2009 AND C1.INSTRUCTOR=INSTRUCTOR AND C1.SEASON<>SEASON);
+*/
+
+
+SELECT f_name, l_name, DESCRIPTION
+FROM INSTRUCTOR,TYPE
+WHERE ID IN (SELECT INSTRUCTOR
+             FROM CLASS C1
+             WHERE EXISTS (SELECT *
+                          FROM CLASS
+                          WHERE C1.YEAR =2009 AND YEAR=2009 AND C1.INSTRUCTOR=INSTRUCTOR AND C1.SEASON='SPRING' AND SEASON='FALL'))
+        AND TYPE IN (SELECT Type
+                     FROM CLASS C1
+                    WHERE EXISTS (SELECT *
+                                  FROM CLASS
+                                  WHERE C1.YEAR =2009 AND YEAR=2009 AND C1.INSTRUCTOR=INSTRUCTOR AND C1.SEASON='SPRING' AND SEASON='FALL'));
+
+            
+--4
+SELECT F_NAME, L_NAME
+FROM INSTRUCTOR
+WHERE ID IN(
+SELECT INSTRUCTOR
+FROM (SELECT INSTRUCTOR, COUNT(INSTRUCTOR) AS IID
+      FROM CLASS
+      GROUP BY INSTRUCTOR) E
+WHERE E.IID>=ALL(SELECT IID FROM (SELECT INSTRUCTOR, COUNT(INSTRUCTOR) AS IID
+      FROM CLASS
+      GROUP BY INSTRUCTOR) E));
+      
+--5
+/*
+draft
+SELECT F_NAME, L_NAME
+FROM RECCENTERMEMBER
+WHERE ID IN (
+          SELECT MEMBER_ID
+          FROM (SELECT MEMBER_ID, COUNT(MEMBER_ID) AS MD
+                FROM ENROLLMENT
+                GROUP BY MEMBER_ID) F
+          WHERE F.MD>=3)
+          
+         SELECT DESCRIPTION
+         FROM TYPE JOIN CLASS ON TYPE.TYPE=CLASS.TYPE
+         WHERE ID IN (SELECT CLASS_ID, MEMBER_ID
+                      FROM ENROLLMENT
+                      WHERE MEMBER_ID IN (
+                                          SELECT MEMBER_ID
+                                          FROM (SELECT MEMBER_ID, COUNT(MEMBER_ID) AS MD
+                                                FROM ENROLLMENT
+                                                GROUP BY MEMBER_ID) F
+                                               WHERE F.MD>=3))
+                                               */
+SELECT F_NAME, L_NAME, DESCRIPTION
+FROM TYPE JOIN (SELECT F_NAME, L_NAME, TYPE                                        
+                FROM CLASS JOIN (SELECT CLASS_ID, F_NAME, L_NAME
+                                FROM ENROLLMENT JOIN RECCENTERMEMBER ON ENROLLMENT.MEMBER_ID=RECCENTERMEMBER.ID
+                                WHERE MEMBER_ID IN (
+                                    SELECT MEMBER_ID
+                                    FROM (SELECT MEMBER_ID, COUNT(MEMBER_ID) AS MD
+                                          FROM ENROLLMENT
+                                          GROUP BY MEMBER_ID) F
+                                          WHERE F.MD>=3)) F1 ON CLASS.ID=F1.CLASS_ID) F2 ON TYPE.TYPE=F2.TYPE;
+
+
+--6
+SELECT G3.F_NAME, G3.L_NAME, G3.FAMILY_ID, DESCRIPTION
+FROM (
+SELECT G1.F_NAME, G1.L_NAME, TYPE, G1.FAMILY_ID
+FROM 
+(SELECT ID, SEASON, F_NAME, L_NAME, FAMILY_ID
+FROM CLASS, (SELECT F_NAME, L_NAME, FAMILY_ID, CLASS_ID, MEMBER_ID
+    FROM RECCENTERMEMBER, ENROLLMENT
+    WHERE ID=MEMBER_ID AND FAMILY_ID IS NOT NULL) G 
+    WHERE CLASS.ID=G.CLASS_ID) G1, (SELECT ID, SEASON, F_NAME, L_NAME, FAMILY_ID
+FROM CLASS, (SELECT F_NAME, L_NAME, FAMILY_ID, CLASS_ID, MEMBER_ID
+    FROM RECCENTERMEMBER, ENROLLMENT
+    WHERE ID=MEMBER_ID AND FAMILY_ID IS NOT NULL) G 
+    WHERE CLASS.ID=G.CLASS_ID) G2, CLASS
+WHERE G1.FAMILY_ID=G2.FAMILY_ID AND G1.F_NAME<>G2.F_NAME AND G1.SEASON='SUMMER' AND G1.SEASON<>'WINTER' AND G2.SEASON='SUMMER' AND G2.SEASON<>'WINTER'
+      AND G1.FAMILY_ID NOT IN (SELECT FAMILY_ID
+                              FROM CLASS, (SELECT F_NAME, L_NAME, FAMILY_ID, CLASS_ID, MEMBER_ID
+                                            FROM RECCENTERMEMBER, ENROLLMENT
+                                            WHERE ID=MEMBER_ID AND FAMILY_ID IS NOT NULL) G 
+                              WHERE CLASS.ID=G.CLASS_ID AND SEASON='WINTER') AND G1.ID=CLASS.ID) G3, TYPE
+WHERE G3.TYPE=TYPE.TYPE;
+    
+    
+--7
+SELECT AVG(H.AGE)
+FROM (SELECT trunc(months_between(sysdate,dob)/12) AS AGE
+      FROM (Select DOB from RECCENTERMEMBER)) H
+WHERE H.AGE>50
+UNION
+SELECT AVG(H.AGE)
+FROM (SELECT trunc(months_between(sysdate,dob)/12) AS AGE
+      FROM (Select DOB from RECCENTERMEMBER)) H
+WHERE H.AGE<=50;

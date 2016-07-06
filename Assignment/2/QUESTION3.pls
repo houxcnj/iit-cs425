@@ -1,0 +1,27 @@
+--Xiaocheng Hou A20309864
+create or replace PROCEDURE QUESTION3(ty IN char, co OUT NUMBER,ret OUT NUMBER)
+AS
+Cursor C3 is 
+SELECT COST
+FROM ENROLLMENT,
+    (SELECT ID
+      FROM CLASS
+      WHERE TYPE=ty)
+WHERE CLASS_ID=ID;
+
+BEGIN
+  ret:=0;
+  OPEN C3;
+  LOOP
+      FETCH C3 into co;
+      EXIT WHEN C3%NOTFOUND;
+      ret:=ret+co;
+  END LOOP;
+  
+  DBMS_OUTPUT.PUT_LINE(ret);
+  CLOSE C3;
+  
+  EXCEPTION
+  WHEN NO_DATA_FOUND THEN
+  DBMS_OUTPUT.PUT_LINE('No data');
+END;
